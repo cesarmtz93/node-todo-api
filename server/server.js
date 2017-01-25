@@ -33,7 +33,6 @@ app.get("/todos", (request, response) => {
 });
 
 app.get("/todos/:id", (request, response) => {
-
     var id = request.params.id;
 
     if(!ObjectID.isValid(id)) {
@@ -41,6 +40,21 @@ app.get("/todos/:id", (request, response) => {
     }
 
     Todo.findById(id).then((todo) => {
+        if(!todo) return response.status(404).send();
+        response.status(200).send({todo});
+    }, (error) => {
+        response.status(400).send();
+    });
+});
+
+app.delete("/todos/:id", (request, response) => {
+    var id = request.params.id;
+
+    if(!ObjectID.isValid(id)) {
+        response.status(404).send();
+    }
+
+    Todo.findByIdAndRemove(id).then((todo) => {
         if(!todo) return response.status(404).send();
         response.status(200).send({todo});
     }, (error) => {
