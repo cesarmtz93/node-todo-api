@@ -1,29 +1,21 @@
 // set up ======================================================================
-require("./config/config");
-const express = require("express");
-const bodyParser = require("body-parser");
+var express = require('express');
+var router = express.Router();
+
 const _ = require("lodash");
 
 const {ObjectID} = require("mongodb");
-const {mongoose} = require("./db/mongoose");
-const {Todo} = require("./models/todo");
-const {User} = require("./models/user");
+const {mongoose} = require("./../db/mongoose");
+const {Todo} = require("./../models/todo");
 
-// configuration ===============================================================
-var app = express();
-app.use(express.static('public'));
-app.use(bodyParser.json());
-
-// listen (start app with node server.js) ======================================
-app.listen(process.env.PORT, () => {
-    console.log(`Started on port ${process.env.PORT}`);
+// middleware specific to this router
+router.use((req, res, next) => {
+  console.log('Time: ', Date.now());
+  next();
 });
 
-// routes =======================================================================
-// var todos = require("./routes/todos");
-// app.use('/todos', todos);
-
-app.post("/todos", (request, response) => {
+// todos routes ================================================================
+router.post("/todos", (request, response) => {
     var todo = new Todo({text: request.body.text});
     todo.save().then((todos) => {
         response.status(200).send(todos);
@@ -32,7 +24,7 @@ app.post("/todos", (request, response) => {
     });
 });
 
-app.get("/todos", (request, response) => {
+router.get("/todos", (request, response) => {
     Todo.find().then((todos) => {
         response.status(200).send({todos});
     }, (error) => {
@@ -40,7 +32,7 @@ app.get("/todos", (request, response) => {
     });
 });
 
-app.get("/todos/:id", (request, response) => {
+router.get("/todos/:id", (request, response) => {
     var id = request.params.id;
 
     if(!ObjectID.isValid(id)) {
@@ -55,7 +47,7 @@ app.get("/todos/:id", (request, response) => {
     });
 });
 
-app.delete("/todos/:id", (request, response) => {
+router.delete("/todos/:id", (request, response) => {
     var id = request.params.id;
 
     if(!ObjectID.isValid(id)) {
@@ -70,7 +62,7 @@ app.delete("/todos/:id", (request, response) => {
     });
 });
 
-app.patch("/todos/:id", (request, response) => {
+router.patch("/todos/:id", (request, response) => {
     var id = request.params.id;
     var body = _.pick(request.body, ["text", "completed"]);
 
@@ -93,17 +85,4 @@ app.patch("/todos/:id", (request, response) => {
     });
 });
 
-app.post("/users", (request, response) => {
-    var body = _.pick(request.body, ["email", "password"]);
-    var user = new User(body);
-
-    user.save().then(() => {
-        return user.generateAuthToken();
-    }).then((token) => {
-        response.header("x-auth", token).send(user);
-    }).catch((error) => {
-        response.status(400).send(error);
-    });
-});
-
-module.exports = {app};
+module.exports = router;
