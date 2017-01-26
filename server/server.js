@@ -9,6 +9,8 @@ const {mongoose} = require("./db/mongoose");
 const {Todo} = require("./models/todo");
 const {User} = require("./models/user");
 
+const {authenticate} = require("./middleware/authenticate");
+
 // configuration ===============================================================
 var app = express();
 app.use(express.static('public'));
@@ -93,6 +95,8 @@ app.patch("/todos/:id", (request, response) => {
     });
 });
 
+
+
 app.post("/users", (request, response) => {
     var body = _.pick(request.body, ["email", "password"]);
     var user = new User(body);
@@ -104,6 +108,10 @@ app.post("/users", (request, response) => {
     }).catch((error) => {
         response.status(400).send(error);
     });
+});
+
+app.get("/users/me", authenticate, (request, response) => {
+    response.status(200).send(request.user);
 });
 
 module.exports = {app};
