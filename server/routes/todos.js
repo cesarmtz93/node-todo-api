@@ -1,16 +1,14 @@
 // set up ======================================================================
+const {ObjectID} = require("mongodb");
 var express = require('express');
 var router = express.Router();
-
 const _ = require("lodash");
 
-const {ObjectID} = require("mongodb");
 const {mongoose} = require("./../db/mongoose");
 const {Todo} = require("./../models/todo");
 
-// middleware specific to this router
+// Middleware specific to this router
 router.use((req, res, next) => {
-  console.log('Time: ', Date.now());
   next();
 });
 
