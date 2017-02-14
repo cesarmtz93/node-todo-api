@@ -95,7 +95,7 @@ app.patch("/todos/:id", (request, response) => {
     });
 });
 
-
+// USERS ROUTES
 app.post("/users", (request, response) => {
     var body = _.pick(request.body, ["email", "password"]);
     var user = new User(body);
@@ -111,6 +111,17 @@ app.post("/users", (request, response) => {
 
 app.get("/users/me", authenticate, (request, response) => {
     response.status(200).send(request.user);
+});
+
+app.post("/users/login", (request, response) => {
+    var body = _.pick(request.body, ["email", "password"]);
+    User.findByCredentials(body.email, body.password).then((user) => {
+        return user.generateAuthToken().then((token) => {
+            response.header("x-auth", token).send(user);
+        });
+    }).catch((error) => {
+        response.status(400).send();
+    });
 });
 
 module.exports = {app};
