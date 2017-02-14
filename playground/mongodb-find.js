@@ -16,19 +16,19 @@ MongoClient.connect("mongodb://localhost:27017/TodoApp", (error, db) => {
         console.log("unable to fetch todos");
     });
 
-    // db.collection("Todos").find({
-    //     _id : ObjectId("587f735e160f3222975e2308")
-    // }).toArray().then((documents) => {
-    //     console.log(JSON.stringify(documents, undefined, 4));
-    // }, (error) => {
-    //     console.log("unable to fetch todos");
-    // });
+    db.collection("Todos").find({
+        _id : ObjectId("587f735e160f3222975e2308")
+    }).toArray().then((documents) => {
+        console.log(JSON.stringify(documents, undefined, 4));
+    }, (error) => {
+        console.log("unable to fetch todos");
+    });
 
-    // db.collection("Todos").find().count().then((count) => {
-    //     console.log("Todos count: "+count);
-    // }, (error) => {
-    //     console.log("unable to fetch todos");
-    // });
+    db.collection("Todos").find().count().then((count) => {
+        console.log("Todos count: "+count);
+    }, (error) => {
+        console.log("unable to fetch todos");
+    });
 
     db.close();
 });
