@@ -21,3 +21,5 @@ var users = require("./routes/users");
 app.use(users);
 
 module.exports = {app};
+// cd Desktop/NodeJS/mongo/bin/
+// ./mongod -dbpath ~/Desktop/NodeJS/mongo-data/

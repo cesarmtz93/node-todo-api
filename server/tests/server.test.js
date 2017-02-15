@@ -1,6 +1,3 @@
-// MacBook-Pro-de-Cesar-4:~ cesarmartinez$ cd Desktop/NodeJS/mongo/bin/
-// MacBook-Pro-de-Cesar-4:bin cesarmartinez$ ./mongod -dbpath ~/Desktop/NodeJS/mongo-data/
-
 const supertest = require("supertest");
 const expect = require("expect");
 
@@ -14,12 +11,13 @@ beforeEach(populateUsers);
 beforeEach(populateTodos);
 
 describe("Todos", () => {
-    describe("Post /todos", () => {
+    describe("POST /todos", () => {
         it("should create a new todo", (done) => {
             var text = "Test todo text";
 
             supertest(app)
             .post("/todos")
+            .set("x-auth", users[0].tokens[0].token)
             .send({text})
             .expect(200)
             .expect((response) => {
@@ -39,6 +37,7 @@ describe("Todos", () => {
         it("should not create a new todo with invalid data", (done) => {
             supertest(app)
             .post("/todos")
+            .set("x-auth", users[0].tokens[0].token)
             .send({})
             .expect(400)
             .end((error, response) => {
@@ -56,9 +55,10 @@ describe("Todos", () => {
         it("should get all todos", (done) => {
             supertest(app)
             .get("/todos")
+            .set("x-auth", users[0].tokens[0].token)
             .expect(200)
             .expect((response) => {
-                expect(response.body.todos.length).toBe(2);
+                expect(response.body.todos.length).toBe(1);
             })
             .end(done);
         });
@@ -68,6 +68,7 @@ describe("Todos", () => {
         it("should get todo document", (done) => {
             supertest(app)
             .get(`/todos/${todos[0]._id.toHexString()}`)
+            .set("x-auth", users[0].tokens[0].token)
             .expect(200)
             .expect((response) => {
                 expect(response.body.todo.text).toBe(todos[0].text);
@@ -78,6 +79,7 @@ describe("Todos", () => {
         it("should return 404 if todo not found", (done) => {
             supertest(app)
             .get(`/todos/${new ObjectID().toHexString()}`)
+            .set("x-auth", users[0].tokens[0].token)
             .expect(404)
             .end(done);
         });
@@ -85,9 +87,19 @@ describe("Todos", () => {
         it("should return 404 for non object ids", (done) => {
             supertest(app)
             .get("/todos/123abc")
+            .set("x-auth", users[0].tokens[0].token)
             .expect(404)
             .end(done);
         });
+
+        it("should not get todo document created by another user", (done) => {
+            supertest(app)
+            .get(`/todos/${todos[1]._id.toHexString()}`)
+            .set("x-auth", users[0].tokens[0].token)
+            .expect(404)
+            .end(done);
+        });
+
     });
 
     describe("DELETE /todos/:id", () => {
@@ -96,6 +108,7 @@ describe("Todos", () => {
 
             supertest(app)
             .delete(`/todos/${id}`)
+            .set("x-auth", users[0].tokens[0].token)
             .expect(200)
             .expect((response) => {
                 // expect(response.body.todo.text).toBe(todos[0].text);
@@ -114,6 +127,7 @@ describe("Todos", () => {
         it("should return 404 if todo not found", (done) => {
             supertest(app)
             .delete(`/todos/${new ObjectID().toHexString()}`)
+            .set("x-auth", users[0].tokens[0].token)
             .expect(404)
             .end(done);
         });
@@ -121,8 +135,26 @@ describe("Todos", () => {
         it("should return 404 for non object ids", (done) => {
             supertest(app)
             .delete("/todos/123abc")
+            .set("x-auth", users[0].tokens[0].token)
             .expect(404)
             .end(done);
+        });
+        
+        it("should not delete todo document created by another user", (done) => {
+            var id = todos[1]._id.toHexString();
+
+            supertest(app)
+            .delete(`/todos/${id}`)
+            .set("x-auth", users[0].tokens[0].token)
+            .expect(404)
+            .end((error, response)=>{
+                if(error) return done(error);
+                
+                Todo.findById(id).then((todo) => {
+                    expect(todo).toExist();
+                    done();
+                }).catch((error) => done(error));
+            });
         });
     });
 
@@ -133,6 +165,7 @@ describe("Todos", () => {
 
             supertest(app)
             .patch(`/todos/${id}`)
+            .set("x-auth", users[0].tokens[0].token)
             .send({text, completed: true})
             .expect(200)
             .expect((response) => {
@@ -143,12 +176,25 @@ describe("Todos", () => {
             .end(done);
         });
 
+        it("should update todo document when created by other user", (done) => {
+            var id = todos[0]._id.toHexString();
+            var text = "Text is changed";
+
+            supertest(app)
+            .patch(`/todos/${id}`)
+            .set("x-auth", users[1].tokens[0].token)
+            .send({text, completed: true})
+            .expect(404)
+            .end(done);
+        });
+
         it("should completedAt when todo is not completed", (done) => {
             var id = todos[1]._id.toHexString();
             var text = "Text is changed again";
 
             supertest(app)
             .patch(`/todos/${id}`)
+            .set("x-auth", users[1].tokens[0].token)
             .send({text, completed: false})
             .expect(200)
             .expect((response) => {
@@ -245,7 +291,7 @@ describe("Users", () => {
                 if(error) return done();
 
                 User.findById(users[1]._id).then((user) => {
-                    expect(user.tokens[0]).toInclude({
+                    expect(user.tokens[1]).toInclude({
                         access: "auth",
                         token: response.headers["x-auth"]
                     });
@@ -269,7 +315,7 @@ describe("Users", () => {
                 if(error) return done();
 
                 User.findById(users[1]._id).then((user) => {
-                    expect(user.tokens.length).toBe(0)
+                    expect(user.tokens.length).toBe(1)
                     done();
                 }).catch((error) => done(error));
             });
